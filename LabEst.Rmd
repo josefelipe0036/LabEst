@@ -1,0 +1,158 @@
+---
+title: "Spotify"
+author: "José Felipe"
+date: "2023-01-13"
+output: html_document
+---
+
+```{python}
+import pandas as pd
+import spotipy.util as util
+import spotipy
+
+user = 'José Felipe'
+scope = 'user-library-read'
+client_id = 'da313eb7d34948459de44d4f9bc6c206'
+client_secret = 'c91752d38cbf45e1b865c14dcad3a046'
+redirect_uri='http://localhost:1410/'
+token = util.prompt_for_user_token(user, scope, client_id, client_secret, redirect_uri)
+
+spotipy_obj = spotipy.Spotify(auth=token)
+saved_tracks_resp = spotipy_obj.current_user_saved_tracks(limit=50, offset=0)
+
+number_of_tracks = saved_tracks_resp['total']
+
+def save_only_some_fields(track_response):
+  album_uri =  track_response['track']['album']['uri']
+  main_artist_uri = track_response["track"]["artists"][0]["uri"]
+  
+  return {
+  'id': str(track_response['track']['id']),
+  'track': str(track_response['track']['name']),
+  'album': str(track_response['track']['album']['name']),
+  'main_artist': track_response["track"]["artists"][0]["name"],
+  'genres': spotipy_obj.artist(main_artist_uri)['genres'],
+  'release_date': track_response['track']['album']['release_date'],
+  'duration_ms': track_response['track']['duration_ms'],
+  'popularity': track_response['track']['popularity'],
+  'added_at': track_response['added_at']
+  }
+
+data_dict = [save_only_some_fields(track) for track in saved_tracks_resp['items']]
+
+while saved_tracks_resp['next']:
+        saved_tracks_resp = spotipy_obj.next(saved_tracks_resp)
+        data_dict.extend([save_only_some_fields(track) for track in saved_tracks_resp['items']])
+
+
+data1 = pd.DataFrame(data_dict)
+
+audio_features = {}
+
+for idd in data1['id'].tolist():
+    audio_features[idd] = spotipy_obj.audio_features(idd)[0]
+
+data1['acousticness'] = data1['id'].apply(lambda idd: audio_features[idd]['acousticness'])
+data1['speechiness'] = data1['id'].apply(lambda idd: audio_features[idd]['speechiness'])
+data1['key'] = data1['id'].apply(lambda idd: str(audio_features[idd]['key']))
+data1['liveness'] = data1['id'].apply(lambda idd: audio_features[idd]['liveness'])
+data1['instrumentalness'] = data1['id'].apply(lambda idd: audio_features[idd]['instrumentalness'])
+data1['energy'] = data1['id'].apply(lambda idd: audio_features[idd]['energy'])
+data1['tempo'] = data1['id'].apply(lambda idd: audio_features[idd]['tempo'])
+data1['time_signature'] = data1['id'].apply(lambda idd: audio_features[idd]['time_signature'])
+data1['loudness'] = data1['id'].apply(lambda idd: audio_features[idd]['loudness'])
+data1['danceability'] = data1['id'].apply(lambda idd: audio_features[idd]['danceability'])
+data1['valence'] = data1['id'].apply(lambda idd: audio_features[idd]['valence'])
+data1['duration_ms'] = data1['id'].apply(lambda idd: audio_features[idd]['duration_ms'])
+```
+
+```{r}
+#Carregando os pacotes
+pacman::p_load(spotifyr,reticulate, tidyverse, factoextra, FactoMineR, cluster)
+```
+
+```{r}
+#Salvando os bancos de dados do python no r
+audio_features<-reticulate::py$audio_features
+DADO_JOSE<-reticulate::py$data1
+```
+
+```{r}
+##visualizando algumas variaveis
+ggplot(data) +
+  aes(x = liveness, y = danceability) +
+  geom_point(shape = "circle", size = 1.5, colour = "#112446") +
+  labs(title = "Liveness vs danceability") +
+  theme_minimal()
+
+ggplot(data) +
+  aes(x = valence, y = energy, size = danceability) +
+  geom_point(shape = "circle", colour = "#112446") +
+  theme_minimal()
+
+
+ggplot(data) +
+  aes(x = energy, y = loudness) +
+  geom_point(shape = "circle", size = 1.5, colour = "#112446") +
+  theme_minimal() 
+
+```
+
+```{r}
+pacman::p_load(GGally)
+data1<-data%>%
+  select(id,popularity, speechiness,energy, loudness, tempo, liveness, instrumentalness, danceability, valence, acousticness)
+plot_teste<-ggpairs(data1[-1])
+data2<-scale(data1[-1])
+PCA(data2)
+```
+
+
+```{r}
+var_selecionadas<-data1%>%
+  select(id, energy, valence,danceability, speechiness)
+
+dado_kmean<-scale(data[-1])#escala menos id
+
+fviz_nbclust(dado_kmean, kmeans, method = "gap_stat")+
+  geom_vline(xintercept = 3, linetype = 2)#Visualiza quantidade de cluster
+
+teste_k<-kmeans(var_selecionadas$energy , centers = 3)#CLusterizacao
+
+fviz_cluster(teste_k, var_selecionadas[-1], ellipse.type = "t")#visualizar cluster
+
+lista_k<-teste_k$cluster
+
+tabela_k<-var_selecionadas%>%
+  cbind(lista_k)
+
+teste1<-left_join(tabela_k, data[c(1,2,4)], by="id")
+
+
+
+```
+
+```{r}
+a1 <- bind_rows(audio_features, .id = "column_label")
+
+Let=(ggplot(a1) +
+  aes(x = tempo, y = time_signature) +
+  geom_point(shape = "circle", size = 1.5, colour = "#EF562D") +
+  theme_light()
+)
+```
+
+```{r}
+pacman::p_load(corrplot)
+a<-a1%>%
+  select(id,danceability, acousticness, energy, loudness, speechiness)
+corrplot(cor(a[-1]), method = "circle")
+```
+
+```{r}
+DADO_PEDRO<-read.csv("spotify.csv")
+DADO_PEDRO$X<- NULL
+data<-rbind(data, DADO_PEDRO)
+```
+
+
