@@ -1,0 +1,134 @@
+---
+title: "Spotify"
+author: "Equipe R"
+date: "2023-01-23"
+output: html_document
+---
+# Spotify com R
+## Os dados foram salvos em **csv**
+```{r message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#Dados Jose
+setwd("/home/jose/UnB/2022.2/LABEST/SPOTIFY")#Definindo o local de trabalho
+data<-vroom::vroom("spotify.csv")#Lendo os dados que foram baixados para evitar erro com a conexão
+```
+
+```{r}
+#Carregando pacotes
+pacman::p_load(spotifyr,GGally, tidyverse, factoextra, FactoMineR, cluster, corrplot, RColorBrewer, tidyverse)#Pacotes
+```
+## Selecionando algumas variáveis
+```{r}
+var_selecionadas<-data%>%
+  select(id,track,danceability, acousticness, energy, loudness, speechiness, liveness, instrumentalness,valence)
+```
+## Resumindo os dados
+```{r echo=FALSE}
+#summary(var_selecionadas)
+require(gt)
+paleta <- brewer.pal(n = 9, name = "Reds")#paleta de cores, tonalidade vermelha
+tibble( " " =c( "Min", "1st Qu.", "Median", "Mean", "3rd Qu.", " Max"),
+        Danceability= c(0.2140,0.4550,0.5550,0.5523,0.6540,0.8600),
+        Acousticness=c(0.0000255, 0.0820000, 0.3530000,0.4030823,0.7310000,0.9910000),
+        Energy=c(0.0457,0.3910,0.5720,0.5632,0.7660,0.9960),
+        Loudness =c(-26.401,-11.790,-8.993,-9.519,-6.839,-2.423),
+        Speechiness=c(0.02410,0.03350, 0.04150,0.06011,0.06170, 0.36100),
+        Liveness=c( 0.0239,0.0991,0.1560,0.2912,0.3470,0.9930),
+        Instrumentalness=c(0.0000000,0.0000000,0.0000298,0.0225586,0.0017300,0.6420000),
+        Valence=c(0.0521,0.3690,0.5570,0.5484,0.7260,0.9750))%>%
+  gt()%>%
+  tab_header( "Resumo dos dados",
+              subtitle = "")%>%
+  tab_options(heading.align = "left",
+              column_labels.border.top.color ="black",
+              column_labels.border.top.width = px(3),
+              column_labels.background.color = paleta[9])%>%
+  tab_source_note("Fonte: Spotify ")
+
+```
+
+
+
+## Visualizando a correlação entre as variáveis escolhidas
+```{r}
+cor_jose<-cor(var_selecionadas[c(-1,-2)])
+corrplot(cor_jose, method = "circle")
+```
+
+
+### Gráficos
+
+```{r}
+(plot_jose<-ggplot(data) +
+  aes(x = energy, y = loudness) +
+  geom_point(shape = "circle", size = 1.5, colour = "#112446") +
+  labs(title = "Energy e loudness", caption = "Spotify") +
+  theme_minimal())
+
+
+ggplot(var_selecionadas) +
+  aes(x = valence, y = danceability) +
+  geom_point(shape = "circle", size = 1.5, colour = "#112446") +
+  labs(title = "Valence e danceability", caption = "Spotify") +
+  theme_minimal()
+
+
+ggplot(var_selecionadas) +
+  aes(x = energy, y = valence) +
+  geom_point(shape = "circle", size = 1.5, colour = "#112446") +
+  labs(title = "Energy e valence", caption = "Spotify") +
+  theme_minimal()
+```
+
+## PCA com as variáveis escolhidas
+```{r}
+(pca_jose<- PCA(var_selecionadas[c(-1,-2)]))
+```
+
+## Dados do Pedro
+```{r echo=FALSE}
+
+data1 <- read_csv("~/UnB/2022.2/LABEST/spotify.csv")%>%
+  select(id,track,danceability, acousticness, energy, loudness, speechiness, liveness, instrumentalness,valence)
+cor_pedro<-cor(data1[c(-1,-2)])
+corrplot(cor_pedro)
+```
+```{r}
+ggplot(data1) +
+  aes(x = energy, y = loudness) +
+  geom_point(shape = "circle", size = 1.5, colour = "#112446") +
+  theme_minimal()
+
+
+ggplot(var_selecionadas) +
+  aes(x = valence, y = danceability) +
+  geom_point(shape = "circle", size = 1.5, colour = "#112446") +
+  theme_minimal()
+
+
+ggplot(var_selecionadas) +
+  aes(x = energy, y = valence) +
+  geom_point(shape = "circle", size = 1.5, colour = "#112446") +
+  theme_minimal()
+```
+## Junção dos dados da Ana, Pedro e José
+```{r message=FALSE, warning=FALSE, include=FALSE}
+data3 <- read_csv("~/UnB/2022.2/LABEST/spotify_ana.csv")%>%
+  select(id,track,danceability, acousticness, energy, loudness, speechiness, liveness,
+         instrumentalness,valence) #Dados da Ana
+data_t<-rbind(var_selecionadas, data1, data3)
+
+```
+
+
+## Correlação
+
+```{r}
+data_total<- cor(data_t[c(-1,-2)])
+corrplot(data_total)
+```
+
+
+
+
+
