@@ -1,7 +1,7 @@
 pacman::p_load(spotifyr, tidyverse)
 
-Sys.setenv(SPOTIFY_CLIENT_ID = 'da313eb7d34948459de44d4f9bc6c206')
-Sys.setenv(SPOTIFY_CLIENT_SECRET = '4ae8e92cea5f4041bd947eaa9dd9dcf9')
+Sys.setenv(SPOTIFY_CLIENT_ID = 'da313eb7d34xxxxxxxxxxxxxxx06')
+Sys.setenv(SPOTIFY_CLIENT_SECRET = 'x2xxxxxxxxxxxxxxxxxxxxeaa9dd9dcf9')
 
 access_token <- get_spotify_access_token()
 lista = list()
